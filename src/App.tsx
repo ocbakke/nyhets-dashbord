@@ -10,20 +10,12 @@ type NewsFilter = PriorityTag | 'ALL' | 'SISTE';
 
 // Helper function for comprehensive sorting of news items
 const sortNewsItems = (a: NewsItem, b: NewsItem): number => {
-  // Primary sort: Priority Tag (RED > YELLOW > GREEN)
-  const priorityOrder: Record<PriorityTag, number> = {
-    [PriorityTag.RED]: 3,
-    [PriorityTag.YELLOW]: 2,
-    [PriorityTag.GREEN]: 1,
-  };
-  const priorityDiff = priorityOrder[b.priorityTag] - priorityOrder[a.priorityTag];
-  if (priorityDiff !== 0) return priorityDiff;
-
-  // Secondary sort: Gemini Score (highest first)
-  const scoreDiff = b.geminiScore - a.geminiScore;
-  if (scoreDiff !== 0) return scoreDiff;
-
-  // Tertiary sort: Timestamp (newest first)
+  // 1. Hovedsortering: AI-vurdering (Høyest score først, f.eks. 10 -> 1)
+  if (b.geminiScore !== a.geminiScore) {
+    return b.geminiScore - a.geminiScore;
+  }
+  
+  // 2. Sekundærsortering: Tid (Nyeste sak først hvis scoren er helt lik)
   return b.timestamp.getTime() - a.timestamp.getTime();
 };
 
