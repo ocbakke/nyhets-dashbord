@@ -1,3 +1,4 @@
+import './index.css';
 import React, { useState, useEffect, useCallback, } from 'react';
 import { PriorityTag, type NewsItem } from './types';
 import { fetchNews, triggerScraping } from './components/newsService';

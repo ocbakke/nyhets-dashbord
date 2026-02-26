@@ -9,9 +9,9 @@ export const NEWS_SOURCES: NewsSource[] = [
 ];
 
 export const PRIORITY_THRESHOLDS = {
-  RED: { min: 8, max: 10, tag: PriorityTag.RED },
-  YELLOW: { min: 4, max: 7, tag: PriorityTag.YELLOW },
-  GREEN: { min: 1, max: 3, tag: PriorityTag.GREEN },
+  RED: { min: 9, max: 10, tag: PriorityTag.RED },
+  YELLOW: { min: 6, max: 8, tag: PriorityTag.YELLOW },
+  GREEN: { min: 1, max: 5, tag: PriorityTag.GREEN },
 };
 
 export const REFRESH_INTERVAL_MS = 60000;
