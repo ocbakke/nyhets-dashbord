@@ -16,6 +16,8 @@ const getSourceLogoUrl = (source: string) => {
   if (source.includes('Varsom')) return 'https://www.google.com/s2/favicons?domain=varsom.no&sz=128';
   if (source.includes('Østfold Kollektivtrafikk')) return 'https://www.google.com/s2/favicons?domain=ostfold-kollektiv.no&sz=128';
   if (source.includes('Bane NOR')) return 'https://www.google.com/s2/favicons?domain=banenor.no&sz=128';
+  if (source.includes('Tolletaten')) return 'https://www.google.com/s2/favicons?domain=toll.no&sz=128';
+  if (source.includes('Østfold fylkeskommune') || source.includes('ØFK')) return 'https://www.google.com/s2/favicons?domain=ofk.no&sz=128';
   
   return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=128'; 
 };
