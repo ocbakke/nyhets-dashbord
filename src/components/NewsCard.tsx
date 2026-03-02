@@ -6,6 +6,21 @@ interface NewsCardProps {
   news: NewsItem;
 }
 
+// Hjelpefunksjon for å hente offisielle logoer via domenenavn
+const getSourceLogoUrl = (source: string) => {
+  if (source.includes('Politiloggen') || source.includes('Politiet')) return 'https://www.google.com/s2/favicons?domain=politiet.no&sz=64';
+  if (source.includes('Vegtrafikksentralen')) return 'https://www.google.com/s2/favicons?domain=vegvesen.no&sz=64';
+  if (source.includes('Sarpsborg Kommune')) return 'https://www.google.com/s2/favicons?domain=sarpsborg.com&sz=64';
+  if (source.includes('Sykehuset')) return 'https://www.google.com/s2/favicons?domain=sykehuset-ostfold.no&sz=64';
+  if (source.includes('NRK')) return 'https://www.google.com/s2/favicons?domain=nrk.no&sz=64';
+  if (source.includes('Varsom')) return 'https://www.google.com/s2/favicons?domain=varsom.no&sz=64';
+  if (source.includes('Østfold Kollektivtrafikk')) return 'https://www.google.com/s2/favicons?domain=ostfold-kollektiv.no&sz=64';
+  if (source.includes('Bane NOR')) return 'https://www.google.com/s2/favicons?domain=banenor.no&sz=64';
+  
+  // En standard avis-logo hvis kilden ikke er på listen
+  return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=64'; 
+};
+
 const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const getPriorityTagClasses = (tag: PriorityTag): string => {
     switch (tag) {
@@ -71,7 +86,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           )} flex items-center space-x-1`}
           aria-label={`Prioritet: ${getPriorityText(news.priorityTag)}`}
         >
-          {/* SVG for alert triangle for 'Høy' priority */}
           {news.priorityTag === PriorityTag.RED && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -94,13 +108,24 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           {news.title}
         </h3>
 
-        {/* Source and Score Tag */}
-        <div className="flex items-center space-x-2 mb-4">
-          <span className="text-gray-400 text-sm font-semibold uppercase tracking-wider">{news.source}</span>
+        {/* Source and Score Tag - HER ER LOGOEN LAGT TIL */}
+        <div className="flex items-center space-x-3 mb-4">
           
-          {/* HER ER ENDRINGEN: Lagt til title for hover-effekt og cursor-help */}
+          {/* Kilde med logo */}
+          <div className="flex items-center space-x-2">
+            <img 
+              src={getSourceLogoUrl(news.source)} 
+              alt={`${news.source} logo`} 
+              className="w-5 h-5 rounded-sm object-contain bg-white p-0.5"
+            />
+            <span className="text-gray-400 text-sm font-semibold uppercase tracking-wider">
+              {news.source}
+            </span>
+          </div>
+          
+          {/* Gemini Score Tag */}
           <span
-            className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-200 cursor-help hover:bg-gray-600 transition-colors"
+            className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-200 cursor-help hover:bg-gray-600 transition-colors ml-auto"
             aria-label={`Gemini score: ${news.geminiScore} av 10`}
             title={news.geminiReasoning ? `AI-begrunnelse: ${news.geminiReasoning}` : "Ingen begrunnelse oppgitt"}
           >
