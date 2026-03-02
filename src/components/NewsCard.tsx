@@ -10,7 +10,7 @@ interface NewsCardProps {
 const getSourceLogoUrl = (source: string) => {
   if (source.includes('Politiloggen') || source.includes('Politiet')) return 'https://www.google.com/s2/favicons?domain=politiet.no&sz=128';
   if (source.includes('Vegtrafikksentralen')) return 'https://www.google.com/s2/favicons?domain=vegvesen.no&sz=128';
-  if (source.includes('Sarpsborg Kommune')) return 'https://www.google.com/s2/favicons?domain=sarpsborg.com&sz=128';
+  if (source.includes('Sarpsborg Kommune')) return 'https://upload.wikimedia.org/wikipedia/commons/4/43/Sarpsborg_komm.svg';
   if (source.includes('Sykehuset')) return 'https://www.google.com/s2/favicons?domain=sykehuset-ostfold.no&sz=128';
   if (source.includes('NRK')) return 'https://www.google.com/s2/favicons?domain=nrk.no&sz=128';
   if (source.includes('Varsom')) return 'https://www.google.com/s2/favicons?domain=varsom.no&sz=128';
