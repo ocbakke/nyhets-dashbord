@@ -6,70 +6,53 @@ interface NewsCardProps {
   news: NewsItem;
 }
 
-// Hjelpefunksjon for å hente offisielle logoer via domenenavn
+// Hjelpefunksjon: Nå ber vi om større logoer (sz=128) for at de skal være skarpe!
 const getSourceLogoUrl = (source: string) => {
-  if (source.includes('Politiloggen') || source.includes('Politiet')) return 'https://www.google.com/s2/favicons?domain=politiet.no&sz=64';
-  if (source.includes('Vegtrafikksentralen')) return 'https://www.google.com/s2/favicons?domain=vegvesen.no&sz=64';
-  if (source.includes('Sarpsborg Kommune')) return 'https://www.google.com/s2/favicons?domain=sarpsborg.com&sz=64';
-  if (source.includes('Sykehuset')) return 'https://www.google.com/s2/favicons?domain=sykehuset-ostfold.no&sz=64';
-  if (source.includes('NRK')) return 'https://www.google.com/s2/favicons?domain=nrk.no&sz=64';
-  if (source.includes('Varsom')) return 'https://www.google.com/s2/favicons?domain=varsom.no&sz=64';
-  if (source.includes('Østfold Kollektivtrafikk')) return 'https://www.google.com/s2/favicons?domain=ostfold-kollektiv.no&sz=64';
-  if (source.includes('Bane NOR')) return 'https://www.google.com/s2/favicons?domain=banenor.no&sz=64';
+  if (source.includes('Politiloggen') || source.includes('Politiet')) return 'https://www.google.com/s2/favicons?domain=politiet.no&sz=128';
+  if (source.includes('Vegtrafikksentralen')) return 'https://www.google.com/s2/favicons?domain=vegvesen.no&sz=128';
+  if (source.includes('Sarpsborg Kommune')) return 'https://www.google.com/s2/favicons?domain=sarpsborg.com&sz=128';
+  if (source.includes('Sykehuset')) return 'https://www.google.com/s2/favicons?domain=sykehuset-ostfold.no&sz=128';
+  if (source.includes('NRK')) return 'https://www.google.com/s2/favicons?domain=nrk.no&sz=128';
+  if (source.includes('Varsom')) return 'https://www.google.com/s2/favicons?domain=varsom.no&sz=128';
+  if (source.includes('Østfold Kollektivtrafikk')) return 'https://www.google.com/s2/favicons?domain=ostfold-kollektiv.no&sz=128';
+  if (source.includes('Bane NOR')) return 'https://www.google.com/s2/favicons?domain=banenor.no&sz=128';
   
-  // En standard avis-logo hvis kilden ikke er på listen
-  return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=64'; 
+  return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=128'; 
 };
 
 const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const getPriorityTagClasses = (tag: PriorityTag): string => {
     switch (tag) {
-      case PriorityTag.RED:
-        return 'bg-red-700';
-      case PriorityTag.YELLOW:
-        return 'bg-yellow-600';
-      case PriorityTag.GREEN:
-        return 'bg-green-700';
-      default:
-        return 'bg-gray-500';
+      case PriorityTag.RED: return 'bg-red-700';
+      case PriorityTag.YELLOW: return 'bg-yellow-600';
+      case PriorityTag.GREEN: return 'bg-green-700';
+      default: return 'bg-gray-500';
     }
   };
 
   const getPriorityDotClasses = (tag: PriorityTag): string => {
     switch (tag) {
-      case PriorityTag.RED:
-        return 'bg-red-500';
-      case PriorityTag.YELLOW:
-        return 'bg-yellow-400';
-      case PriorityTag.GREEN:
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-400';
+      case PriorityTag.RED: return 'bg-red-500';
+      case PriorityTag.YELLOW: return 'bg-yellow-400';
+      case PriorityTag.GREEN: return 'bg-green-500';
+      default: return 'bg-gray-400';
     }
   };
 
   const getPriorityText = (tag: PriorityTag): string => {
     switch (tag) {
-      case PriorityTag.RED:
-        return 'Høy';
-      case PriorityTag.YELLOW:
-        return 'Medium';
-      case PriorityTag.GREEN:
-        return 'Lav';
-      default:
-        return 'Ukjent';
+      case PriorityTag.RED: return 'Høy';
+      case PriorityTag.YELLOW: return 'Medium';
+      case PriorityTag.GREEN: return 'Lav';
+      default: return 'Ukjent';
     }
   };
 
   const isRed = news.priorityTag === PriorityTag.RED;
-
-  // Calculate if the news is "new" (defined here as less than 5 minutes old)
   const now = new Date();
   const timeDiffMs = now.getTime() - news.timestamp.getTime();
   const fiveMinMs = 5 * 60 * 1000;
   const isRecent = timeDiffMs < fiveMinMs;
-
-  // Only pulse if it is RED priority AND Recent
   const showPulse = isRed && isRecent;
 
   return (
@@ -87,55 +70,47 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           aria-label={`Prioritet: ${getPriorityText(news.priorityTag)}`}
         >
           {news.priorityTag === PriorityTag.RED && (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM10 13a1 1 0 100-2 1 1 0 000 2zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM10 13a1 1 0 100-2 1 1 0 000 2zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
           )}
           <span>{getPriorityText(news.priorityTag)}</span>
         </span>
 
-        {/* Title */}
-        <h3 className="text-xl font-bold text-gray-100 mb-2 leading-tight pr-16">
-          {news.title}
-        </h3>
-
-        {/* Source and Score Tag - HER ER LOGOEN LAGT TIL */}
-        <div className="flex items-center space-x-3 mb-4">
+        {/* Hovedtopp: Logo til venstre, tekst til høyre */}
+        <div className="flex items-start gap-4 mb-3 mt-1">
           
-          {/* Kilde med logo */}
-          <div className="flex items-center space-x-2">
+          {/* VENSTRE: Logo */}
+          <div className="flex-shrink-0">
             <img 
               src={getSourceLogoUrl(news.source)} 
               alt={`${news.source} logo`} 
-              className="w-5 h-5 rounded-sm object-contain bg-white p-0.5"
+              className="w-12 h-12 md:w-14 md:h-14 rounded-md object-contain bg-white p-1.5 shadow-sm"
             />
-            <span className="text-gray-400 text-sm font-semibold uppercase tracking-wider">
-              {news.source}
-            </span>
           </div>
-          
-          {/* Gemini Score Tag */}
-          <span
-            className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-200 cursor-help hover:bg-gray-600 transition-colors ml-auto"
-            aria-label={`Gemini score: ${news.geminiScore} av 10`}
-            title={news.geminiReasoning ? `AI-begrunnelse: ${news.geminiReasoning}` : "Ingen begrunnelse oppgitt"}
-          >
-            <span
-              className={`w-2 h-2 rounded-full ${getPriorityDotClasses(
-                news.priorityTag,
-              )}`}
-            ></span>
-            <span>Score: {news.geminiScore}/10</span>
-          </span>
+
+          {/* HØYRE: Tittel og Score */}
+          <div className="flex flex-col flex-1">
+            <h3 className="text-xl font-bold text-gray-100 mb-2 leading-tight pr-16">
+              {news.title}
+            </h3>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-gray-400 text-sm font-semibold uppercase tracking-wider">
+                {news.source}
+              </span>
+              
+              {/* Gemini Score Tag */}
+              <span
+                className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-200 cursor-help hover:bg-gray-600 transition-colors"
+                aria-label={`Gemini score: ${news.geminiScore} av 10`}
+                title={news.geminiReasoning ? `AI-begrunnelse: ${news.geminiReasoning}` : "Ingen begrunnelse oppgitt"}
+              >
+                <span className={`w-2 h-2 rounded-full ${getPriorityDotClasses(news.priorityTag)}`}></span>
+                <span>Score: {news.geminiScore}/10</span>
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Description */}
@@ -145,19 +120,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
 
         {/* Relative time */}
         <div className="flex items-center justify-end text-gray-400 text-xs mt-auto">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>{formatRelativeTime(news.timestamp)}</span>
         </div>
