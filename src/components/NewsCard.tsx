@@ -55,13 +55,16 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const timeDiffMs = now.getTime() - news.timestamp.getTime();
   const fiveMinMs = 5 * 60 * 1000;
   const isRecent = timeDiffMs < fiveMinMs;
-  const showPulse = isRed && isRecent;
+  
+  // Dette er triggeren: Saken må være RØD og nyere enn 5 minutter.
+  const triggerAlarm = isRed && isRecent;
 
   return (
     <a href={news.url} target="_blank" rel="noopener noreferrer" className="block h-full">
       <div 
+        // Her legger vi inn flash-alarm klassen hvis triggeren er sann
         className={`bg-gray-800 rounded-lg p-5 flex flex-col h-full relative hover:bg-gray-700 transition-colors duration-200 
-          ${showPulse ? 'pulse-red-glow border border-red-500/50' : 'shadow-md'}
+          ${triggerAlarm ? 'flash-alarm border border-red-500' : 'shadow-md'}
         `}
       >
         {/* Priority Tag (Top Right) */}
