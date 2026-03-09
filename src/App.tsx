@@ -161,27 +161,29 @@ function App() {
           </div>
           <div className="flex items-center space-x-4">
             
-            {/* 4. NY KNAPP FOR Å SKRU PÅ VARSLER */}
+            {/* KNAPP FOR Å SKRU PÅ VARSLER (Alltid mørk) */}
             <button 
               onClick={requestNotificationPermission}
-              className="bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm px-4 py-2 rounded-lg shadow flex items-center gap-2 border border-gray-600 transition-colors hidden sm:flex"
+              className="bg-slate-900 hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-lg shadow-md flex items-center gap-2 border border-slate-700 transition-colors hidden sm:flex"
               title="Få pushvarsel når viktige saker dukker opp"
             >
               🔔 Skru på varsler
             </button>
 
             {lastUpdated && (
-              <span className="text-gray-400 text-sm flex items-center">
+              <span className="text-gray-500 font-medium text-sm flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Sist: {lastUpdated}
               </span>
             )}
+            
+            {/* OPPDATER-KNAPP (Alltid mørk / sterk blå) */}
             <button
               onClick={handleRefresh}
-              className={`flex items-center px-4 py-2 text-white rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
-                ${isScraping ? 'bg-indigo-600' : 'bg-blue-600 hover:bg-blue-700'}
+              className={`flex items-center px-4 py-2 text-white font-medium rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-opacity-75 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                ${isScraping ? 'bg-slate-700 border border-slate-600' : 'bg-slate-900 hover:bg-black border border-slate-700'}
               `}
               disabled={loading || isScraping}
               aria-label="Oppdater nyheter"
@@ -210,7 +212,6 @@ function App() {
               {isScraping ? 'Søker...' : (loading ? 'Laster...' : 'Oppdater')}
             </button>
           </div>
-        </div>
         <FilterControls
           selectedFilter={selectedFilter}
           onSelectFilter={handleSelectFilter}
