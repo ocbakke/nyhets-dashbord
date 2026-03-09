@@ -1,5 +1,5 @@
 import './index.css';
-import React, { useState, useEffect, useCallback, } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PriorityTag, type NewsItem } from './types';
 import { fetchNews, triggerScraping } from './components/newsService';
 import { REFRESH_INTERVAL_MS } from './constants';
@@ -22,11 +22,28 @@ const sortNewsItems = (a: NewsItem, b: NewsItem): number => {
 function App() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [isScraping, setIsScraping] = useState<boolean>(false); // New state for scraping
+  const [isScraping, setIsScraping] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<NewsFilter>('SISTE');
   const [selectedSource, setSelectedSource] = useState<string>('ALL');
   const [lastUpdated, setLastUpdated] = useState<string>('');
+
+  // 1. Huskelapp for å unngå spam-varsler
+  const notifiedNewsIds = useRef<Set<string>>(new Set());
+
+  // 2. Funksjon for å be brukeren om tillatelse til varsler
+  const requestNotificationPermission = async () => {
+    if (!("Notification" in window)) {
+      alert("Nettleseren din støtter ikke skrivebordsvarsler.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      new Notification("Varsler aktivert! 🚨", {
+        body: "Du får nå et pling når det skjer noe med score 7 eller høyere.",
+      });
+    }
+  };
 
   const loadNews = useCallback(async () => {
     setLoading(true);
@@ -35,6 +52,30 @@ function App() {
       const fetchedNews = await fetchNews();
       setNewsItems(fetchedNews);
       setLastUpdated(new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+
+      // 3. --- VARSLINGSLOGIKKEN ---
+      // Går gjennom alle de hentede sakene
+      fetchedNews.forEach((article) => {
+        // Sjekker om scoren er 7 eller mer, OG at vi ikke allerede har varslet om den
+        if (article.geminiScore >= 7 && !notifiedNewsIds.current.has(article.id)) {
+          
+          if (Notification.permission === "granted") {
+            const notification = new Notification(`🚨 Score: ${article.geminiScore}/10 - ${article.source}`, {
+              body: article.title,
+              requireInteraction: true 
+            });
+
+            notification.onclick = () => {
+              window.focus(); 
+              notification.close();
+            };
+          }
+
+          // Legger saken i huskelappen så vi ikke varsler igjen ved neste oppdatering
+          notifiedNewsIds.current.add(article.id);
+        }
+      });
+
     } catch (e: unknown) {
       if (e instanceof Error) {
         setError(`Kunne ikke hente nyheter: ${e.message}`);
@@ -50,21 +91,17 @@ function App() {
   useEffect(() => {
     loadNews(); // Initial load
 
-    // Set up automatic refresh (Only reads from DB, does not trigger scrape automatically to save resources)
+    // Set up automatic refresh
     const intervalId = setInterval(loadNews, REFRESH_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
   }, [loadNews]);
 
-  // Updated handleRefresh to include Scraping
   const handleRefresh = useCallback(async () => {
     setIsScraping(true);
     setError(null);
     try {
-      // 1. Trigger the backend scraper
       await triggerScraping();
-      
-      // 2. Load the newly populated data
       await loadNews();
     } catch (e: unknown) {
        if (e instanceof Error) {
@@ -94,10 +131,8 @@ function App() {
     const now = new Date();
     const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
 
-    // 1. Filter out news older than 3 days.
     let ageFilteredNews = newsItems.filter(news => news.timestamp.getTime() > threeDaysAgo.getTime());
 
-    // 2. Filter by Source if selected
     if (selectedSource !== 'ALL') {
       ageFilteredNews = ageFilteredNews.filter(news => news.source === selectedSource);
     }
@@ -105,15 +140,10 @@ function App() {
     let result: NewsItem[] = [];
 
     if (selectedFilter === 'SISTE') {
-      // For 'SISTE' tab:
-      // 3. Get the 9 most recent items (chronologically from ageFilteredNews).
       const sortedByTimestampForLatest = [...ageFilteredNews].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       result = sortedByTimestampForLatest.slice(0, 9);
-      
-      // 4. Sort these 9 items by Importance (High to Low)
       return result.sort(sortNewsItems);
     } else {
-      // For 'ALL' and specific priority filters:
       result = ageFilteredNews.filter(news => selectedFilter === 'ALL' || news.priorityTag === selectedFilter);
       return result.sort(sortNewsItems);
     }
@@ -130,6 +160,16 @@ function App() {
             <p className="text-gray-400 text-sm mt-1">Sanntidsoppdateringer hvert minutt</p>
           </div>
           <div className="flex items-center space-x-4">
+            
+            {/* 4. NY KNAPP FOR Å SKRU PÅ VARSLER */}
+            <button 
+              onClick={requestNotificationPermission}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm px-4 py-2 rounded-lg shadow flex items-center gap-2 border border-gray-600 transition-colors hidden sm:flex"
+              title="Få pushvarsel når viktige saker dukker opp"
+            >
+              🔔 Skru på varsler
+            </button>
+
             {lastUpdated && (
               <span className="text-gray-400 text-sm flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -180,7 +220,6 @@ function App() {
         />
       </header>
 
-
       {error && (
         <div className="bg-red-800 text-white p-4 rounded-lg mb-6 shadow-md text-center" role="alert">
           <p className="font-bold">Feilmelding</p>
@@ -199,7 +238,6 @@ function App() {
       ) : filteredNews.length === 0 ? (
         <div className="text-center py-20 text-gray-400 text-xl" role="status" aria-live="polite">
           Ingen nyheter funnet {selectedFilter !== 'ALL' && `i kategorien '${selectedFilter}'`}. 
-          {/* Hint to user if DB is empty */}
           {newsItems.length === 0 && (
              <p className="text-sm mt-4 text-gray-500">Databasen virker tom. Prøv å trykke "Oppdater" for å starte et søk (krever at backend er satt opp).</p>
           )}
