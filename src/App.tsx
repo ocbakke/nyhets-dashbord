@@ -31,17 +31,21 @@ function App() {
   // 1. Huskelapp for å unngå spam-varsler
   const notifiedNewsIds = useRef<Set<string>>(new Set());
 
-  // 2. Funksjon for å be brukeren om tillatelse til varsler
+  // 2. Funksjon for å be brukeren om tillatelse til varsler (Apple-sikret)
   const requestNotificationPermission = async () => {
-    if (!("Notification" in window)) {
-      alert("Nettleseren din støtter ikke skrivebordsvarsler.");
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      new Notification("Varsler aktivert! 🚨", {
-        body: "Du får nå et pling når det skjer noe med score 7 eller høyere.",
-      });
+    if (typeof window !== 'undefined' && 'Notification' in window && window.Notification) {
+      try {
+        const permission = await window.Notification.requestPermission();
+        if (permission === "granted") {
+          new window.Notification("Varsler aktivert! 🚨", {
+            body: "Du får nå et pling når det skjer noe med score 7 eller høyere.",
+          });
+        }
+      } catch (e) {
+        console.error("Feil ved aktivering av varsler:", e);
+      }
+    } else {
+      alert("Nettleseren din (eller enheten) støtter ikke skrivebordsvarsler.");
     }
   };
 
@@ -53,14 +57,13 @@ function App() {
       setNewsItems(fetchedNews);
       setLastUpdated(new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
-      // 3. --- VARSLINGSLOGIKKEN ---
-      // Går gjennom alle de hentede sakene
+      // 3. --- VARSLINGSLOGIKKEN (Apple-sikret) ---
       fetchedNews.forEach((article) => {
-        // Sjekker om scoren er 7 eller mer, OG at vi ikke allerede har varslet om den
         if (article.geminiScore >= 7 && !notifiedNewsIds.current.has(article.id)) {
           
-          if (Notification.permission === "granted") {
-            const notification = new Notification(`🚨 Score: ${article.geminiScore}/10 - ${article.source}`, {
+          // Vi bruker window.Notification overalt for å unngå "Can't find variable"-krasj
+          if (typeof window !== 'undefined' && 'Notification' in window && window.Notification && window.Notification.permission === "granted") {
+            const notification = new window.Notification(`🚨 Score: ${article.geminiScore}/10 - ${article.source}`, {
               body: article.title,
               requireInteraction: true 
             });
@@ -71,7 +74,7 @@ function App() {
             };
           }
 
-          // Legger saken i huskelappen så vi ikke varsler igjen ved neste oppdatering
+          // Legger saken i huskelappen
           notifiedNewsIds.current.add(article.id);
         }
       });
@@ -243,7 +246,7 @@ function App() {
         <div className="text-center py-20 text-gray-400 text-xl" role="status" aria-live="polite">
           Ingen nyheter funnet {selectedFilter !== 'ALL' && `i kategorien '${selectedFilter}'`}. 
           {newsItems.length === 0 && (
-             <p className="text-sm mt-4 text-gray-500">Databasen virker tom. Prøv å trykke "Oppdater" for å starte et søk (krever at backend er satt opp).</p>
+             <p className="text-sm mt-4 text-gray-500">Databasen virker tom. Prøv å trykke "Oppdater" for å starte et søk.</p>
           )}
         </div>
       ) : (
