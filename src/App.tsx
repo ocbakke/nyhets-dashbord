@@ -128,7 +128,7 @@ function App() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4">
           <div className="flex flex-col mb-4 sm:mb-0">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-white">
-              SA-NYHETSDASHBOARD
+              Nyhetsdashbordet
             </h1>
             <p className="text-gray-400 text-sm mt-1">Automatisk oppdatering fra skyen</p>
           </div>
