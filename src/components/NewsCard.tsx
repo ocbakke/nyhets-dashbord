@@ -63,7 +63,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
 
     const HOST = import.meta.env.VITE_CUE_HOST || "https://ece5.api.no"; 
     const PUB_CODE = import.meta.env.VITE_CUE_PUB_CODE || "sarp"; 
-    const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sarp"; 
+    const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sarpsborgsarbeiderblad"; 
     
     const server = `${HOST}/${PUB_CODE}`;
     const cue = `${server}/cue`;
