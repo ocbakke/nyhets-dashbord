@@ -18,6 +18,7 @@ export interface NewsItem {
   geminiScore: number;
   geminiReasoning: string;
   priorityTag: PriorityTag;
+  ai_summary?: string; // <-- HER ER DEN NYE STJERNESPILLEREN VÅR! ✨
 }
 
 export interface NewsSource {

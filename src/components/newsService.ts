@@ -65,5 +65,6 @@ export const fetchNews = async (): Promise<NewsItem[]> => {
     geminiScore: item.gemini_score ?? 0, // Default to 0 if null
     geminiReasoning: item.gemini_reasoning || 'Ingen begrunnelse tilgjengelig.',
     priorityTag: (item.priority_tag as PriorityTag) || PriorityTag.GREEN, // Default to GREEN if null/invalid
+    ai_summary: item.ai_summary, // <--- HER ER MAGIEN! Henter AI-sammendraget fra databasen ✨
   }));
 };

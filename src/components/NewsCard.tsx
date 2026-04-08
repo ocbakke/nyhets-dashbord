@@ -72,7 +72,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
     const model = "story";
     const modeluri = `${webservice}/escenic/publication/${PUB_NAME}/model/content-type/${model}`;
     
-    // HER ER LØSNINGEN: Vi bruker publicationUri direkte, slik du gjorde i Python!
     const publicationUri = `${webservice}/escenic/publication/${PUB_NAME}/`;
 
     const now = new Date();
@@ -92,7 +91,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
             "string": modeluri,
             "$class": "URI"
         },
-        // Kaster dummy-seksjonen og sender saken til rotnivået for publikasjonen
         "homePublication": {
             "string": publicationUri,
             "$class": "URI"
@@ -119,6 +117,9 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const isRecent = timeDiffMs < fiveMinMs;
   
   const triggerAlarm = isRed && isRecent;
+
+  // Bestemmer hvilken tekst som skal vises og sendes til Cue
+  const displaySummary = news.ai_summary || news.description;
 
   return (
     <div className="block h-full">
@@ -171,8 +172,9 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           </div>
         </div>
 
-        <p className="text-gray-300 text-base mb-6 flex-grow line-clamp-4">
-          {news.description}
+        {/* Her viser vi KI-sammendraget! Lagt på litt styling for å skille det ut */}
+        <p className="text-gray-200 text-base mb-6 flex-grow line-clamp-4 leading-relaxed">
+          {displaySummary}
         </p>
 
         <div className="mt-auto pt-4 border-t border-gray-700 flex flex-col gap-4">
@@ -197,7 +199,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
             <button
               onClick={(e) => {
                 e.preventDefault();
-                window.open(lagCueLenke(news.title, news.description), '_blank');
+                // Nå sender vi displaySummary (AI-teksten) inn til Cue
+                window.open(lagCueLenke(news.title, displaySummary), '_blank');
               }}
               className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex justify-center items-center gap-2 shadow-md border border-blue-500"
             >
