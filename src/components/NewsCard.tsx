@@ -50,6 +50,57 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
     }
   };
 
+  // --- CUE EKSORT-FUNKSJON ---
+  const lagCueLenke = (tittel: string, brodtekst_ren: string) => {
+    // 1. Bygger HTML av brødteksten for at Cue skal skjønne avsnittene
+    let bodyHtml = brodtekst_ren
+        .split('\n')
+        .filter(avsnitt => avsnitt.trim() !== '')
+        .map(avsnitt => `<p>${avsnitt.trim()}</p>`)
+        .join('');
+
+    if (bodyHtml.length > 5000) {
+        bodyHtml = bodyHtml.substring(0, 5000) + "<p>... (tekst kuttet pga lengde)</p>";
+    }
+
+    // 2. Henter fra .env hvis de finnes, ellers fallbacks
+    // Bytt ut "https://cue.amedia.no" med den faktiske URL-en deres hvis .env ikke brukes
+    const CUE_HOST = import.meta.env.VITE_CUE_HOST || "https://cue.amedia.no"; 
+    const PUB_CODE = import.meta.env.VITE_CUE_PUB_CODE || "sa"; 
+    const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sa"; 
+    const model = "story";
+
+    const server = `${CUE_HOST}/${PUB_CODE}`;
+    const cue = `${server}/cue`;
+    const webservice = `${server}/webservice`;
+
+    const modeluri = `${webservice}/escenic/publication/${PUB_NAME}/model/content-type/${model}`;
+    const publicationUri = `${webservice}/escenic/publication/${PUB_NAME}/`;
+
+    // 3. Tidsstempel for unik ID
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(2, 14);
+    const sourceid = `Redaksjonen-${timestamp}`;
+    const mimetype = `x-ece/new-content; type=${model}`;
+
+    // 4. Bygger JSON-payload
+    const extraData = {
+        "modelURI": { "string": modeluri, "$class": "URI" },
+        "homePublication": { "string": publicationUri, "$class": "URI" },
+        "container": false,
+        "values": {
+            "title": tittel,
+            "body": bodyHtml,
+            "byline": "Nyhetsjegeren"
+        }
+    };
+
+    const mimetypeEncoded = encodeURIComponent(mimetype);
+    const extraEncoded = encodeURIComponent(JSON.stringify(extraData));
+
+    return `${cue}/#/main?uri=${sourceid}&mimetype=${mimetypeEncoded}&extra=${extraEncoded}`;
+  };
+
   const isRed = news.priorityTag === PriorityTag.RED;
   const now = new Date();
   const timeDiffMs = now.getTime() - news.timestamp.getTime();
@@ -59,19 +110,19 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   // Dette er triggeren: Saken må være RØD og nyere enn 5 minutter.
   const triggerAlarm = isRed && isRecent;
 
+  // Byttet ut den ytre <a> tagen med en <div> slik at knappene våre fungerer optimalt
   return (
-    <a href={news.url} target="_blank" rel="noopener noreferrer" className="block h-full">
+    <div className="block h-full">
       <div 
-        // Her legger vi inn flash-alarm klassen hvis triggeren er sann
-        className={`bg-gray-800 rounded-lg p-5 flex flex-col h-full relative hover:bg-gray-700 transition-colors duration-200 
-          ${triggerAlarm ? 'flash-alarm border border-red-500' : 'shadow-md'}
+        className={`bg-gray-800 rounded-lg p-5 flex flex-col h-full relative hover:bg-gray-750 transition-colors duration-200 
+          ${triggerAlarm ? 'flash-alarm border border-red-500' : 'shadow-md border border-gray-700'}
         `}
       >
         {/* Priority Tag (Top Right) */}
         <span
           className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold text-white ${getPriorityTagClasses(
             news.priorityTag,
-          )} flex items-center space-x-1`}
+          )} flex items-center space-x-1 shadow-sm z-10`}
           aria-label={`Prioritet: ${getPriorityText(news.priorityTag)}`}
         >
           {news.priorityTag === PriorityTag.RED && (
@@ -84,7 +135,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
 
         {/* Hovedtopp: Logo til venstre, tekst til høyre */}
         <div className="flex items-start gap-4 mb-3 mt-1">
-          
           {/* VENSTRE: Logo */}
           <div className="flex-shrink-0">
             <img 
@@ -119,19 +169,45 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         </div>
 
         {/* Description */}
-        <p className="text-gray-300 text-base mb-4 flex-grow line-clamp-4">
+        <p className="text-gray-300 text-base mb-6 flex-grow line-clamp-4">
           {news.description}
         </p>
 
-        {/* Relative time */}
-        <div className="flex items-center justify-end text-gray-400 text-xs mt-auto">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{formatRelativeTime(news.timestamp)}</span>
+        {/* BUNNSEKSJON: Tidspunkt og handlingsknapper */}
+        <div className="mt-auto pt-4 border-t border-gray-700 flex flex-col gap-4">
+          
+          <div className="flex items-center justify-end text-gray-400 text-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{formatRelativeTime(news.timestamp)}</span>
+          </div>
+
+          {/* Knapperekke */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a 
+              href={news.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex-1 text-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+            >
+              Kilde / Les saken
+            </a>
+            
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                window.open(lagCueLenke(news.title, news.description), '_blank');
+              }}
+              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex justify-center items-center gap-2 shadow-md border border-blue-500"
+            >
+              ✍️ Opprett i Cue
+            </button>
+          </div>
+          
         </div>
       </div>
-    </a>
+    </div>
   );
 };
 
