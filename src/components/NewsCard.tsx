@@ -61,9 +61,9 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         bodyHtml = bodyHtml.substring(0, 5000) + "<p>... (tekst kuttet pga lengde)</p>";
     }
 
-    const HOST = import.meta.env.VITE_CUE_HOST || "https://cue.amedia.no"; 
-    const PUB_CODE = import.meta.env.VITE_CUE_PUB_CODE || "sa"; 
-    const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sa"; 
+    const HOST = import.meta.env.VITE_CUE_HOST || "https://ece5.api.no"; 
+    const PUB_CODE = import.meta.env.VITE_CUE_PUB_CODE || "sarp"; 
+    const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sarpsborgsarbeiderblad"; 
     
     const server = `${HOST}/${PUB_CODE}`;
     const cue = `${server}/cue`;
