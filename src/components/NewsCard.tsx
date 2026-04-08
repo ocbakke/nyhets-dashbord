@@ -98,8 +98,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         "container": false,
         "values": {
             "title": tittel,
-            "body": bodyHtml,
-            "byline": "Nyhetsjegeren (AI)"
+            "body": bodyHtml
+            // Byline er nå fjernet for at Cue skal autoutfylle navnet til journalisten!
         }
     };
 
@@ -118,7 +118,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   
   const triggerAlarm = isRed && isRecent;
 
-  // Bestemmer hvilken tekst som skal vises og sendes til Cue
   const displaySummary = news.ai_summary || news.description;
 
   return (
@@ -172,7 +171,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           </div>
         </div>
 
-        {/* Her viser vi KI-sammendraget! Lagt på litt styling for å skille det ut */}
         <p className="text-gray-200 text-base mb-6 flex-grow line-clamp-4 leading-relaxed">
           {displaySummary}
         </p>
@@ -199,7 +197,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
             <button
               onClick={(e) => {
                 e.preventDefault();
-                // Nå sender vi displaySummary (AI-teksten) inn til Cue
                 window.open(lagCueLenke(news.title, displaySummary), '_blank');
               }}
               className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex justify-center items-center gap-2 shadow-md border border-blue-500"
