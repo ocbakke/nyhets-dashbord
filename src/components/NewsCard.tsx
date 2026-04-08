@@ -49,7 +49,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
     }
   };
 
-  // --- EKSORT TIL CUE (OFFISIELL OPPSKRIFT) ---
+  // --- EKSORT TIL CUE ---
   const lagCueLenke = (tittel: string, brodtekst_ren: string) => {
     let bodyHtml = brodtekst_ren
         .split('\n')
@@ -63,7 +63,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
 
     const HOST = import.meta.env.VITE_CUE_HOST || "https://ece5.api.no"; 
     const PUB_CODE = import.meta.env.VITE_CUE_PUB_CODE || "sarp"; 
-    const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sarpsborgsarbeiderblad"; 
+    const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sarp"; 
     
     const server = `${HOST}/${PUB_CODE}`;
     const cue = `${server}/cue`;
@@ -72,10 +72,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
     const model = "story";
     const modeluri = `${webservice}/escenic/publication/${PUB_NAME}/model/content-type/${model}`;
     
-    const sectionId = import.meta.env.VITE_CUE_SECTION_ID || "6"; 
-    const homeSectionUri = `${webservice}/escenic/section/${sectionId}`;
-    
-    // (Fjernet 'publicationUri' herfra for å gjøre Vercel fornøyd!)
+    // HER ER LØSNINGEN: Vi bruker publicationUri direkte, slik du gjorde i Python!
+    const publicationUri = `${webservice}/escenic/publication/${PUB_NAME}/`;
 
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);
@@ -94,7 +92,12 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
             "string": modeluri,
             "$class": "URI"
         },
-        "homeSectionUri": homeSectionUri,
+        // Kaster dummy-seksjonen og sender saken til rotnivået for publikasjonen
+        "homePublication": {
+            "string": publicationUri,
+            "$class": "URI"
+        },
+        "container": false,
         "values": {
             "title": tittel,
             "body": bodyHtml,
