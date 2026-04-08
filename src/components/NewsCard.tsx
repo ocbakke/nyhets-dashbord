@@ -6,7 +6,6 @@ interface NewsCardProps {
   news: NewsItem;
 }
 
-// Hjelpefunksjon: Nå ber vi om større logoer (sz=128) for at de skal være skarpe!
 const getSourceLogoUrl = (source: string) => {
   if (source.includes('Politiloggen') || source.includes('Politiet')) return 'https://www.google.com/s2/favicons?domain=politiet.no&sz=128';
   if (source.includes('Vegtrafikksentralen')) return 'https://www.google.com/s2/favicons?domain=vegvesen.no&sz=128';
@@ -50,9 +49,9 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
     }
   };
 
-  // --- CUE EKSORT-FUNKSJON ---
+  // --- EKSORT TIL CUE (OFFISIELL OPPSKRIFT) ---
   const lagCueLenke = (tittel: string, brodtekst_ren: string) => {
-    // 1. Bygger HTML av brødteksten for at Cue skal skjønne avsnittene
+    // 1. Bygg lovlig HTML (kun p, b, i, osv tillatt ifølge docs)
     let bodyHtml = brodtekst_ren
         .split('\n')
         .filter(avsnitt => avsnitt.trim() !== '')
@@ -63,42 +62,65 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         bodyHtml = bodyHtml.substring(0, 5000) + "<p>... (tekst kuttet pga lengde)</p>";
     }
 
-    // 2. Henter fra .env hvis de finnes, ellers fallbacks
-    // Bytt ut "https://cue.amedia.no" med den faktiske URL-en deres hvis .env ikke brukes
-    const CUE_HOST = import.meta.env.VITE_CUE_HOST || "https://cue.amedia.no"; 
+    // 2. Base variabler (Bruk .env eller hardkodet for SA)
+    const HOST = import.meta.env.VITE_CUE_HOST || "https://cue.amedia.no"; // Selve hosten
     const PUB_CODE = import.meta.env.VITE_CUE_PUB_CODE || "sa"; 
     const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sa"; 
-    const model = "story";
-
-    const server = `${CUE_HOST}/${PUB_CODE}`;
+    
+    // Server URL-en bygget slik docs viser: "${host}/${pubcode}"
+    const server = `${HOST}/${PUB_CODE}`;
     const cue = `${server}/cue`;
     const webservice = `${server}/webservice`;
 
+    // Bygger lenkene til Cue-systemet
+    const model = "story";
     const modeluri = `${webservice}/escenic/publication/${PUB_NAME}/model/content-type/${model}`;
+    
+    // I følge docs skal man bruke homeSectionUri (F.eks section/6). 
+    // Erfaringsmessig (fra din forrige Python-kode) kan dette gi 404 hvis seksjonen ikke finnes.
+    // Hvis du får 404, bytt 'homeSectionUri' i ekstra-dataene under til 'homePublication' og bruk publication_uri.
+    const sectionId = import.meta.env.VITE_CUE_SECTION_ID || "6"; 
+    const homeSectionUri = `${webservice}/escenic/section/${sectionId}`;
     const publicationUri = `${webservice}/escenic/publication/${PUB_NAME}/`;
 
-    // 3. Tidsstempel for unik ID
+    // 3. Generer unik URI for kilden (Format: nyhetsjeger-yymmdd-HHMMSS)
     const now = new Date();
-    const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(2, 14);
-    const sourceid = `Redaksjonen-${timestamp}`;
-    const mimetype = `x-ece/new-content; type=${model}`;
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const timestamp = `${yy}${mm}${dd}-${hh}${min}${ss}`;
 
-    // 4. Bygger JSON-payload
-    const extraData = {
-        "modelURI": { "string": modeluri, "$class": "URI" },
-        "homePublication": { "string": publicationUri, "$class": "URI" },
-        "container": false,
+    const sourceid = `nyhetsjeger-${timestamp}`;
+    const mimetype = `x-ece/new-content;type=${model}`;
+
+    // 4. Bygger JSON-payload nøyaktig slik Cue forventer
+    const extraData: any = {
+        "modelURI": {
+            "string": modeluri,
+            "$class": "URI"
+        },
+        // Velg EN av disse (docs sier homeSectionUri, din gamle sa homePublication). 
+        // Ligger som homeSectionUri nå for å følge docs.
+        "homeSectionUri": homeSectionUri,
         "values": {
             "title": tittel,
+            // "frontpageTitle": tittel, // Kan slås på om dere vil fylle front-tittel auto
+            // "leadtext": "", // Hvis dere genererer ingress via AI senere, legg det her!
             "body": bodyHtml,
-            "byline": "Nyhetsjegeren"
+            "byline": "Nyhetsjegeren (AI)"
         }
     };
 
+    // 5. Kod parametrene forsiktig slik at Cue ikke feiler på rare tegn
     const mimetypeEncoded = encodeURIComponent(mimetype);
     const extraEncoded = encodeURIComponent(JSON.stringify(extraData));
 
-    return `${cue}/#/main?uri=${sourceid}&mimetype=${mimetypeEncoded}&extra=${extraEncoded}`;
+    // 6. Returner den offisielle strukturen: cue + "/#/main?" + params
+    const params = `uri=${sourceid}&mimetype=${mimetypeEncoded}&extra=${extraEncoded}`;
+    return `${cue}/#/main?${params}`;
   };
 
   const isRed = news.priorityTag === PriorityTag.RED;
@@ -107,10 +129,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const fiveMinMs = 5 * 60 * 1000;
   const isRecent = timeDiffMs < fiveMinMs;
   
-  // Dette er triggeren: Saken må være RØD og nyere enn 5 minutter.
   const triggerAlarm = isRed && isRecent;
 
-  // Byttet ut den ytre <a> tagen med en <div> slik at knappene våre fungerer optimalt
   return (
     <div className="block h-full">
       <div 
@@ -135,7 +155,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
 
         {/* Hovedtopp: Logo til venstre, tekst til høyre */}
         <div className="flex items-start gap-4 mb-3 mt-1">
-          {/* VENSTRE: Logo */}
           <div className="flex-shrink-0">
             <img 
               src={getSourceLogoUrl(news.source)} 
@@ -144,7 +163,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
             />
           </div>
 
-          {/* HØYRE: Tittel og Score */}
           <div className="flex flex-col flex-1">
             <h3 className="text-xl font-bold text-gray-100 mb-2 leading-tight pr-16">
               {news.title}
@@ -155,10 +173,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
                 {news.source}
               </span>
               
-              {/* Gemini Score Tag */}
               <span
                 className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-200 cursor-help hover:bg-gray-600 transition-colors"
-                aria-label={`Gemini score: ${news.geminiScore} av 10`}
                 title={news.geminiReasoning ? `AI-begrunnelse: ${news.geminiReasoning}` : "Ingen begrunnelse oppgitt"}
               >
                 <span className={`w-2 h-2 rounded-full ${getPriorityDotClasses(news.priorityTag)}`}></span>
@@ -183,7 +199,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
             <span>{formatRelativeTime(news.timestamp)}</span>
           </div>
 
-          {/* Knapperekke */}
           <div className="flex flex-col sm:flex-row gap-3">
             <a 
               href={news.url} 
