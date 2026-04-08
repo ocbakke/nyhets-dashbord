@@ -51,7 +51,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
 
   // --- EKSORT TIL CUE (OFFISIELL OPPSKRIFT) ---
   const lagCueLenke = (tittel: string, brodtekst_ren: string) => {
-    // 1. Bygg lovlig HTML (kun p, b, i, osv tillatt ifølge docs)
     let bodyHtml = brodtekst_ren
         .split('\n')
         .filter(avsnitt => avsnitt.trim() !== '')
@@ -62,28 +61,22 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         bodyHtml = bodyHtml.substring(0, 5000) + "<p>... (tekst kuttet pga lengde)</p>";
     }
 
-    // 2. Base variabler (Bruk .env eller hardkodet for SA)
-    const HOST = import.meta.env.VITE_CUE_HOST || "https://cue.amedia.no"; // Selve hosten
+    const HOST = import.meta.env.VITE_CUE_HOST || "https://cue.amedia.no"; 
     const PUB_CODE = import.meta.env.VITE_CUE_PUB_CODE || "sa"; 
     const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sa"; 
     
-    // Server URL-en bygget slik docs viser: "${host}/${pubcode}"
     const server = `${HOST}/${PUB_CODE}`;
     const cue = `${server}/cue`;
     const webservice = `${server}/webservice`;
 
-    // Bygger lenkene til Cue-systemet
     const model = "story";
     const modeluri = `${webservice}/escenic/publication/${PUB_NAME}/model/content-type/${model}`;
     
-    // I følge docs skal man bruke homeSectionUri (F.eks section/6). 
-    // Erfaringsmessig (fra din forrige Python-kode) kan dette gi 404 hvis seksjonen ikke finnes.
-    // Hvis du får 404, bytt 'homeSectionUri' i ekstra-dataene under til 'homePublication' og bruk publication_uri.
     const sectionId = import.meta.env.VITE_CUE_SECTION_ID || "6"; 
     const homeSectionUri = `${webservice}/escenic/section/${sectionId}`;
-    const publicationUri = `${webservice}/escenic/publication/${PUB_NAME}/`;
+    
+    // (Fjernet 'publicationUri' herfra for å gjøre Vercel fornøyd!)
 
-    // 3. Generer unik URI for kilden (Format: nyhetsjeger-yymmdd-HHMMSS)
     const now = new Date();
     const yy = String(now.getFullYear()).slice(-2);
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -96,29 +89,22 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
     const sourceid = `nyhetsjeger-${timestamp}`;
     const mimetype = `x-ece/new-content;type=${model}`;
 
-    // 4. Bygger JSON-payload nøyaktig slik Cue forventer
     const extraData: any = {
         "modelURI": {
             "string": modeluri,
             "$class": "URI"
         },
-        // Velg EN av disse (docs sier homeSectionUri, din gamle sa homePublication). 
-        // Ligger som homeSectionUri nå for å følge docs.
         "homeSectionUri": homeSectionUri,
         "values": {
             "title": tittel,
-            // "frontpageTitle": tittel, // Kan slås på om dere vil fylle front-tittel auto
-            // "leadtext": "", // Hvis dere genererer ingress via AI senere, legg det her!
             "body": bodyHtml,
             "byline": "Nyhetsjegeren (AI)"
         }
     };
 
-    // 5. Kod parametrene forsiktig slik at Cue ikke feiler på rare tegn
     const mimetypeEncoded = encodeURIComponent(mimetype);
     const extraEncoded = encodeURIComponent(JSON.stringify(extraData));
 
-    // 6. Returner den offisielle strukturen: cue + "/#/main?" + params
     const params = `uri=${sourceid}&mimetype=${mimetypeEncoded}&extra=${extraEncoded}`;
     return `${cue}/#/main?${params}`;
   };
@@ -138,7 +124,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           ${triggerAlarm ? 'flash-alarm border border-red-500' : 'shadow-md border border-gray-700'}
         `}
       >
-        {/* Priority Tag (Top Right) */}
         <span
           className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold text-white ${getPriorityTagClasses(
             news.priorityTag,
@@ -153,7 +138,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           <span>{getPriorityText(news.priorityTag)}</span>
         </span>
 
-        {/* Hovedtopp: Logo til venstre, tekst til høyre */}
         <div className="flex items-start gap-4 mb-3 mt-1">
           <div className="flex-shrink-0">
             <img 
@@ -184,12 +168,10 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           </div>
         </div>
 
-        {/* Description */}
         <p className="text-gray-300 text-base mb-6 flex-grow line-clamp-4">
           {news.description}
         </p>
 
-        {/* BUNNSEKSJON: Tidspunkt og handlingsknapper */}
         <div className="mt-auto pt-4 border-t border-gray-700 flex flex-col gap-4">
           
           <div className="flex items-center justify-end text-gray-400 text-xs">
@@ -219,7 +201,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
               ✍️ Opprett i Cue
             </button>
           </div>
-          
         </div>
       </div>
     </div>
