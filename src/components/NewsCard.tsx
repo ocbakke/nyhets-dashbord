@@ -17,6 +17,8 @@ const getSourceLogoUrl = (source: string) => {
   if (source.includes('Bane NOR')) return 'https://www.google.com/s2/favicons?domain=banenor.no&sz=128';
   if (source.includes('Tolletaten')) return 'https://www.google.com/s2/favicons?domain=toll.no&sz=128';
   if (source.includes('Østfold fylkeskommune') || source.includes('ØFK')) return 'https://upload.wikimedia.org/wikipedia/commons/a/a2/%C3%98stfold_v%C3%A5pen.svg';
+  if (source.includes('HRS') || source.includes('Hovedredningssentralen')) return 'https://www.google.com/s2/favicons?domain=hovedredningssentralen.no&sz=128';
+  if (source.includes('110') || source.includes('Brann')) return 'https://www.google.com/s2/favicons?domain=ost110.no&sz=128';
   
   return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=128'; 
 };
