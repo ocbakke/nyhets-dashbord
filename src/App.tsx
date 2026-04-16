@@ -1,25 +1,41 @@
 import './index.css';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PriorityTag, type NewsItem } from './types';
-import { fetchNews } from './components/newsService'; // Fjernet triggerScraping herfra
+import { fetchNews } from './components/newsService';
 import { REFRESH_INTERVAL_MS } from './constants';
 import NewsCard from './components/NewsCard';
 import FilterControls from './components/FilterControls';
 
 type NewsFilter = PriorityTag | 'ALL' | 'SISTE';
 
-// Hjelpefunksjon for sortering (Høyest score først, så nyest)
+// --- NY LOGIKK FOR VIP-UTLØPSDATO ---
+// Hjelpefunksjon for å regne ut "effektiv" score.
+// Er saken eldre enn 5 timer, mister den poengene sine i sorteringen og faller ned.
+const getEffectiveScore = (news: NewsItem): number => {
+  const ageMs = new Date().getTime() - news.timestamp.getTime();
+  const fiveHoursMs = 5 * 60 * 60 * 1000;
+  
+  if (ageMs > fiveHoursMs) {
+    return 0; // Saken har gått ut på dato for topplasseringen
+  }
+  return news.geminiScore;
+};
+
+// Hjelpefunksjon for sortering (Høyest effektiv score først, så nyest)
 const sortNewsItems = (a: NewsItem, b: NewsItem): number => {
-  if (b.geminiScore !== a.geminiScore) {
-    return b.geminiScore - a.geminiScore;
+  const scoreA = getEffectiveScore(a);
+  const scoreB = getEffectiveScore(b);
+
+  if (scoreB !== scoreA) {
+    return scoreB - scoreA;
   }
   return b.timestamp.getTime() - a.timestamp.getTime();
 };
+// ------------------------------------
 
 function App() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  // Fjernet isScraping-state siden knappen er borte
   const [error, setError] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<NewsFilter>('SISTE');
   const [selectedSource, setSelectedSource] = useState<string>('ALL');
@@ -88,8 +104,6 @@ function App() {
     return () => clearInterval(intervalId);
   }, [loadNews]);
 
-  // handleRefresh-funksjonen er slettet herfra
-
   const handleSelectFilter = useCallback((filter: NewsFilter) => {
     setSelectedFilter(filter);
   }, []);
@@ -107,11 +121,14 @@ function App() {
     const now = new Date();
     const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
     let ageFilteredNews = newsItems.filter(news => news.timestamp.getTime() > threeDaysAgo.getTime());
+    
     if (selectedSource !== 'ALL') {
       ageFilteredNews = ageFilteredNews.filter(news => news.source === selectedSource);
     }
+    
     let result: NewsItem[] = [];
     if (selectedFilter === 'SISTE') {
+      // Henter de 9 nyeste sakene uansett score, deretter sorteres de med den nye utløpsdato-logikken!
       const sortedByTimestampForLatest = [...ageFilteredNews].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       result = sortedByTimestampForLatest.slice(0, 9);
       return result.sort(sortNewsItems);
@@ -122,7 +139,6 @@ function App() {
   }, [newsItems, selectedFilter, selectedSource]);
 
   return (
-    // LØSNING LYS-MODUS: La til 'dark' klasse her for å tvinge mørkt tema overalt
     <div className="dark min-h-screen bg-gray-900 text-gray-50 p-6 sm:p-8 md:p-10">
       <header className="sticky top-0 bg-gray-900 z-10 -mx-6 sm:-mx-8 md:-mx-10 px-6 sm:px-8 md:px-10 pb-4 border-b border-gray-700 mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4">
@@ -135,7 +151,6 @@ function App() {
           
           <div className="flex items-center space-x-4">
             
-            {/* LØSNING LYS-MODUS: Sikret at knappen er mørk og teksten hvit uansett modus */}
             <button 
               onClick= {requestNotificationPermission}
               className="bg-gray-950 hover:bg-black text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-lg flex items-center gap-2.5 border border-gray-700 transition-colors hidden sm:flex"
@@ -152,8 +167,6 @@ function App() {
                 Sist oppdatert: {lastUpdated}
               </span>
             )}
-            
-            {/* HER LÅ OPPDATER-KNAPPEN. DEN ER NÅ SLETTET. 🎉 */}
             
           </div>
         </div>
