@@ -23,6 +23,98 @@ const getSourceLogoUrl = (source: string) => {
   return 'https://www.google.com/s2/favicons?domain=news.google.com&sz=128'; 
 };
 
+const escapeHtml = (value: string): string =>
+  value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+const getSafeExternalUrl = (value: string): string | null => {
+  try {
+    const parsedUrl = new URL(value);
+
+    if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+      return parsedUrl.toString();
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
+
+const getSafeCueUrl = (title: string, bodyText: string): string | null => {
+  let bodyHtml = bodyText
+    .split('\n')
+    .filter(avsnitt => avsnitt.trim() !== '')
+    .map(avsnitt => `<p>${escapeHtml(avsnitt.trim())}</p>`)
+    .join('');
+
+  if (bodyHtml.length > 5000) {
+    bodyHtml = `${bodyHtml.substring(0, 5000)}<p>... (tekst kuttet pga lengde)</p>`;
+  }
+
+  const rawHost = import.meta.env.VITE_CUE_HOST || 'https://ece5.api.no';
+  const pubCode = import.meta.env.VITE_CUE_PUB_CODE || 'sarp';
+  const pubName = import.meta.env.VITE_CUE_PUB_NAME || 'sarpsborgsarbeiderblad';
+
+  let hostUrl: URL;
+  try {
+    hostUrl = new URL(rawHost);
+  } catch {
+    return null;
+  }
+
+  if (hostUrl.protocol !== 'http:' && hostUrl.protocol !== 'https:') {
+    return null;
+  }
+
+  const normalizedHost = hostUrl.toString().replace(/\/$/, '');
+  const encodedPubCode = encodeURIComponent(pubCode);
+  const encodedPubName = encodeURIComponent(pubName);
+  const server = `${normalizedHost}/${encodedPubCode}`;
+  const cue = `${server}/cue`;
+  const webservice = `${server}/webservice`;
+  const model = 'story';
+  const modeluri = `${webservice}/escenic/publication/${encodedPubName}/model/content-type/${model}`;
+  const publicationUri = `${webservice}/escenic/publication/${encodedPubName}/`;
+
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  const timestamp = `${yy}${mm}${dd}-${hh}${min}${ss}`;
+  const sourceid = `nyhetsjeger-${timestamp}`;
+  const mimetype = `x-ece/new-content;type=${model}`;
+
+  const extraData = {
+    modelURI: {
+      string: modeluri,
+      $class: 'URI',
+    },
+    homePublication: {
+      string: publicationUri,
+      $class: 'URI',
+    },
+    container: false,
+    values: {
+      title: title.trim(),
+      body: bodyHtml,
+    },
+  };
+
+  const mimetypeEncoded = encodeURIComponent(mimetype);
+  const extraEncoded = encodeURIComponent(JSON.stringify(extraData));
+  const params = `uri=${sourceid}&mimetype=${mimetypeEncoded}&extra=${extraEncoded}`;
+
+  return `${cue}/#/main?${params}`;
+};
+
 const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const getPriorityTagClasses = (tag: PriorityTag): string => {
     switch (tag) {
@@ -51,67 +143,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
     }
   };
 
-  // --- EKSORT TIL CUE ---
-  const lagCueLenke = (tittel: string, brodtekst_ren: string) => {
-    let bodyHtml = brodtekst_ren
-        .split('\n')
-        .filter(avsnitt => avsnitt.trim() !== '')
-        .map(avsnitt => `<p>${avsnitt.trim()}</p>`)
-        .join('');
-
-    if (bodyHtml.length > 5000) {
-        bodyHtml = bodyHtml.substring(0, 5000) + "<p>... (tekst kuttet pga lengde)</p>";
-    }
-
-    const HOST = import.meta.env.VITE_CUE_HOST || "https://ece5.api.no"; 
-    const PUB_CODE = import.meta.env.VITE_CUE_PUB_CODE || "sarp"; 
-    const PUB_NAME = import.meta.env.VITE_CUE_PUB_NAME || "sarpsborgsarbeiderblad"; 
-    
-    const server = `${HOST}/${PUB_CODE}`;
-    const cue = `${server}/cue`;
-    const webservice = `${server}/webservice`;
-
-    const model = "story";
-    const modeluri = `${webservice}/escenic/publication/${PUB_NAME}/model/content-type/${model}`;
-    
-    const publicationUri = `${webservice}/escenic/publication/${PUB_NAME}/`;
-
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
-    const timestamp = `${yy}${mm}${dd}-${hh}${min}${ss}`;
-
-    const sourceid = `nyhetsjeger-${timestamp}`;
-    const mimetype = `x-ece/new-content;type=${model}`;
-
-    const extraData: any = {
-        "modelURI": {
-            "string": modeluri,
-            "$class": "URI"
-        },
-        "homePublication": {
-            "string": publicationUri,
-            "$class": "URI"
-        },
-        "container": false,
-        "values": {
-            "title": tittel,
-            "body": bodyHtml
-            // Byline er nå fjernet for at Cue skal autoutfylle navnet til journalisten!
-        }
-    };
-
-    const mimetypeEncoded = encodeURIComponent(mimetype);
-    const extraEncoded = encodeURIComponent(JSON.stringify(extraData));
-
-    const params = `uri=${sourceid}&mimetype=${mimetypeEncoded}&extra=${extraEncoded}`;
-    return `${cue}/#/main?${params}`;
-  };
-
   const isRed = news.priorityTag === PriorityTag.RED;
   const now = new Date();
   const timeDiffMs = now.getTime() - news.timestamp.getTime();
@@ -121,6 +152,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const triggerAlarm = isRed && isRecent;
 
   const displaySummary = news.ai_summary || news.description;
+  const safeArticleUrl = getSafeExternalUrl(news.url);
+  const safeCueUrl = getSafeCueUrl(news.title, displaySummary);
 
   return (
     <div className="block h-full">
@@ -187,24 +220,52 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <a 
-              href={news.url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex-1 text-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
-            >
-              Kilde / Les saken
-            </a>
+            {safeArticleUrl ? (
+              <a 
+                href={safeArticleUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex-1 text-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+              >
+                Kilde / Les saken
+              </a>
+            ) : (
+              <span
+                className="flex-1 text-center bg-gray-800 text-gray-500 py-2 px-3 rounded-lg text-sm font-medium border border-gray-700 cursor-not-allowed"
+                aria-disabled="true"
+                title="Ugyldig eller utrygg lenke"
+              >
+                Kilde utilgjengelig
+              </span>
+            )}
             
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                window.open(lagCueLenke(news.title, displaySummary), '_blank');
-              }}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex justify-center items-center gap-2 shadow-md border border-blue-500"
-            >
-              ✍️ Opprett i Cue
-            </button>
+            {safeCueUrl ? (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  const newWindow = window.open(
+                    safeCueUrl,
+                    '_blank',
+                    'noopener,noreferrer',
+                  );
+
+                  if (newWindow) {
+                    newWindow.opener = null;
+                  }
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex justify-center items-center gap-2 shadow-md border border-blue-500"
+              >
+                ✍️ Opprett i Cue
+              </button>
+            ) : (
+              <span
+                className="flex-1 text-center bg-blue-950 text-blue-300 py-2 px-3 rounded-lg text-sm font-bold border border-blue-900 cursor-not-allowed"
+                aria-disabled="true"
+                title="Cue-konfigurasjonen er ugyldig"
+              >
+                Cue utilgjengelig
+              </span>
+            )}
           </div>
         </div>
       </div>

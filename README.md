@@ -1,73 +1,115 @@
-# React + TypeScript + Vite
+# Nyhetsdashbord
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Et React-basert dashbord for å følge lokale nyhetssaker og hendelser i sanntid. Appen henter ferdig prosesserte saker fra Supabase, oppdaterer visningen automatisk, og lar brukeren filtrere på prioritet og kilde.
 
-Currently, two official plugins are available:
+## Hva prosjektet gjør
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Henter de nyeste sakene fra Supabase-tabellen `news_items`
+- Oppdaterer automatisk hvert minutt
+- Filtrerer på prioritet (`Rød`, `Gul`, `Grønn`, `Alle`, `Siste`)
+- Filtrerer på kilde
+- Viser AI-score, begrunnelse og sammendrag
+- Marker røde og ferske saker med alarm-animasjon
+- Kan sende nettleservarsler for saker med høy score
+- Kan åpne en ferdigutfylt opprett-lenke til Cue
 
-## React Compiler
+## Teknologistack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS 4
+- Supabase JavaScript client
 
-## Expanding the ESLint configuration
+## Hvordan appen er bygget
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Prosjektet er en ren frontend-app. Den gjør ikke selve skrapingen eller AI-vurderingen lokalt, men leser ferdig bearbeidede data fra Supabase.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Hovedfiler
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- `src/main.tsx`: starter React-appen
+- `src/App.tsx`: hovedlogikk for lasting, polling, filtrering, sortering og layout
+- `src/components/newsService.ts`: henter nyheter fra Supabase og mapper databasefelter til frontend-modellen
+- `src/services/supabaseClient.ts`: oppretter Supabase-klienten fra miljøvariabler
+- `src/components/FilterControls.tsx`: filterknapper og kildevalg
+- `src/components/NewsCard.tsx`: presentasjon av hver sak, inkludert Cue-lenke og varsellogikk
+- `src/types.ts`: TypeScript-typer for nyhetsdata
+- `src/constants.ts`: konstanter som oppdateringsintervall og prioritetsterskler
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Dataflyt
+
+1. Appen kobler seg til Supabase med miljøvariabler.
+2. `fetchNews()` leser de siste radene fra `news_items`.
+3. Data fra databasen mappes fra `snake_case` til feltene frontend bruker.
+4. Appen filtrerer bort gamle saker, lar brukeren velge prioritet og kilde, og sorterer resultatene.
+5. UI-et viser kort med kilde, tidspunkt, score, sammendrag og lenker videre.
+
+## Sortering og prioritet
+
+Appen bruker både publiseringstid og AI-score for å løfte frem viktige saker.
+
+- Nye saker kan havne høyt basert på `geminiScore`
+- Saker eldre enn 5 timer mister denne topprioriteten i sorteringen
+- Filteret `Siste` viser de 9 nyeste sakene før de sorteres etter den interne prioriteringslogikken
+
+Selve AI-scoren og `priorityTag` antas å være satt i backend før dataene lagres i Supabase.
+
+## Miljøvariabler
+
+Lag en `.env`-fil med disse verdiene:
+
+```env
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_CUE_HOST=...
+VITE_CUE_PUB_CODE=...
+VITE_CUE_PUB_NAME=...
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Bare `VITE_SUPABASE_URL` og `VITE_SUPABASE_ANON_KEY` er påkrevd for at appen skal starte. Cue-variablene er valgfrie og brukes når man oppretter sak via knappen i et nyhetskort.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Lokal utvikling
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Installer avhengigheter:
+
+```bash
+npm install
 ```
+
+Start utviklingsserver:
+
+```bash
+npm run dev
+```
+
+Bygg produksjonsversjon:
+
+```bash
+npm run build
+```
+
+Kjør lint:
+
+```bash
+npm run lint
+```
+
+## Forventet datamodell
+
+Frontend-koden forventer at `news_items` inneholder felter som ligner på:
+
+- `id`
+- `title`
+- `source`
+- `published_at`
+- `url`
+- `description`
+- `gemini_score`
+- `gemini_reasoning`
+- `priority_tag`
+- `ai_summary`
+
+## Merknader
+
+- Prosjektet inneholder en `triggerScraping()`-funksjon for en Supabase Edge Function, men denne brukes ikke direkte i UI-et akkurat nå.
+- Appen er designet som et operativt dashbord med mørk visning og tydelig prioritering av hendelser.
