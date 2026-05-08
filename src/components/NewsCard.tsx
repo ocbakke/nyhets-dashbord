@@ -244,12 +244,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
                 {news.source}
               </span>
 
-              {isStortinget && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-sky-900 text-sky-100 border border-sky-700">
-                  Politisk aktivitet: Østfold/Sarpsborg
-                </span>
-              )}
-              
               <span
                 className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-200 cursor-help hover:bg-gray-600 transition-colors"
                 title={news.geminiReasoning ? `AI-begrunnelse: ${news.geminiReasoning}` : "Ingen begrunnelse oppgitt"}
