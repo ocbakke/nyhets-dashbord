@@ -7,6 +7,7 @@ interface NewsCardProps {
 }
 
 const getSourceLogoUrl = (source: string) => {
+  if (isStortingetSource(source)) return 'https://upload.wikimedia.org/wikipedia/commons/6/6d/Stortinget_logo.svg';
   if (source.includes('Politiloggen') || source.includes('Politiet')) return 'https://www.google.com/s2/favicons?domain=politiet.no&sz=128';
   if (source.includes('Vegtrafikksentralen')) return 'https://www.google.com/s2/favicons?domain=vegvesen.no&sz=128';
   if (source.includes('Sarpsborg Kommune')) return 'https://upload.wikimedia.org/wikipedia/commons/4/43/Sarpsborg_komm.svg';
@@ -115,6 +116,25 @@ const getSafeCueUrl = (title: string, bodyText: string): string | null => {
   return `${cue}/#/main?${params}`;
 };
 
+const isStortingetSource = (source: string): boolean => (
+  source.trim().toLocaleLowerCase('nb-NO').includes('stortinget')
+);
+
+const getUrlHost = (url: string): string => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+};
+
+const formatPublishedAt = (date: Date): string => (
+  date.toLocaleString('no-NO', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+);
+
 const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const getPriorityTagClasses = (tag: PriorityTag): string => {
     switch (tag) {
@@ -151,9 +171,16 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   
   const triggerAlarm = isRed && isRecent;
 
-  const displaySummary = news.ai_summary || news.description;
+  const isStortinget = isStortingetSource(news.source);
+  const aiSummary = news.ai_summary?.trim() || '';
+  const description = news.description?.trim() || '';
+  const displaySummary = aiSummary || description;
   const safeArticleUrl = getSafeExternalUrl(news.url);
   const safeCueUrl = getSafeCueUrl(news.title, displaySummary);
+  const sourceHost = getUrlHost(safeArticleUrl || news.url);
+  const showDescription = Boolean(aiSummary && description && description !== aiSummary);
+  const publishedAt = formatPublishedAt(news.timestamp);
+  const sourceLinkLabel = isStortinget ? 'Åpne hos Stortinget' : 'Kilde / Les saken';
 
   return (
     <div className="block h-full">
@@ -179,8 +206,8 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         <div className="flex items-start gap-4 mb-3 mt-1">
           <div className="flex-shrink-0">
             <img 
-              src={getSourceLogoUrl(news.source)} 
-              alt={`${news.source} logo`} 
+              src={getSourceLogoUrl(news.source)}
+              alt={`${news.source} logo`}
               className="w-12 h-12 md:w-14 md:h-14 rounded-md object-contain bg-white p-1.5 shadow-sm"
             />
           </div>
@@ -194,6 +221,12 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
               <span className="text-gray-400 text-sm font-semibold uppercase tracking-wider">
                 {news.source}
               </span>
+
+              {isStortinget && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-sky-900 text-sky-100 border border-sky-700">
+                  Politisk aktivitet: Østfold/Sarpsborg
+                </span>
+              )}
               
               <span
                 className="inline-flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-700 text-gray-200 cursor-help hover:bg-gray-600 transition-colors"
@@ -206,17 +239,48 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
           </div>
         </div>
 
-        <p className="text-gray-200 text-base mb-6 flex-grow line-clamp-4 leading-relaxed">
-          {displaySummary}
-        </p>
+        <div className="mb-6 flex-grow space-y-4">
+          {displaySummary && (
+            <section>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+                {aiSummary ? 'AI-sammendrag' : 'Beskrivelse'}
+              </p>
+              <p className="text-gray-200 text-base line-clamp-4 leading-relaxed">
+                {displaySummary}
+              </p>
+            </section>
+          )}
+
+          {showDescription && (
+            <section className="rounded-md bg-gray-900 border border-gray-700 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+                Beskrivelse
+              </p>
+              <p className="text-gray-300 text-sm line-clamp-3 leading-relaxed">
+                {description}
+              </p>
+            </section>
+          )}
+
+          {news.geminiReasoning && (
+            <section className="rounded-md bg-gray-900 border border-gray-700 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
+                AI-begrunnelse
+              </p>
+              <p className="text-gray-300 text-sm line-clamp-3 leading-relaxed">
+                {news.geminiReasoning}
+              </p>
+            </section>
+          )}
+        </div>
 
         <div className="mt-auto pt-4 border-t border-gray-700 flex flex-col gap-4">
           
-          <div className="flex items-center justify-end text-gray-400 text-xs">
+          <div className="flex items-center justify-end text-gray-400 text-xs" title={`Publisert: ${publishedAt}`}>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>{formatRelativeTime(news.timestamp)}</span>
+            <span>{formatRelativeTime(news.timestamp)} · {publishedAt}</span>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
@@ -226,8 +290,14 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex-1 text-center bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                title={safeArticleUrl}
               >
-                Kilde / Les saken
+                {sourceLinkLabel}
+                {sourceHost && (
+                  <span className="block text-[11px] font-normal text-gray-300 truncate">
+                    {sourceHost}
+                  </span>
+                )}
               </a>
             ) : (
               <span
