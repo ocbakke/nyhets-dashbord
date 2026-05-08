@@ -6,6 +6,28 @@ interface NewsCardProps {
   news: NewsItem;
 }
 
+interface ExpandableInfoPanelProps {
+  title: string;
+  content: string;
+}
+
+const ExpandableInfoPanel: React.FC<ExpandableInfoPanelProps> = ({ title, content }) => (
+  <details className="group rounded-md bg-gray-900 border border-gray-700 p-3">
+    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
+      <span>{title}</span>
+      <span className="text-[11px] font-medium normal-case tracking-normal text-gray-500 group-open:hidden">
+        Vis
+      </span>
+      <span className="hidden text-[11px] font-medium normal-case tracking-normal text-gray-500 group-open:inline">
+        Skjul
+      </span>
+    </summary>
+    <p className="mt-2 max-h-36 overflow-y-auto pr-1 text-gray-300 text-sm leading-relaxed">
+      {content}
+    </p>
+  </details>
+);
+
 const getSourceLogoUrl = (source: string) => {
   if (isStortingetSource(source)) return 'https://upload.wikimedia.org/wikipedia/commons/6/6d/Stortinget_logo.svg';
   if (source.includes('Politiloggen') || source.includes('Politiet')) return 'https://www.google.com/s2/favicons?domain=politiet.no&sz=128';
@@ -178,7 +200,7 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
   const safeArticleUrl = getSafeExternalUrl(news.url);
   const safeCueUrl = getSafeCueUrl(news.title, displaySummary);
   const sourceHost = getUrlHost(safeArticleUrl || news.url);
-  const showDescription = Boolean(aiSummary && description && description !== aiSummary);
+  const showExpandableDescription = Boolean(description);
   const publishedAt = formatPublishedAt(news.timestamp);
   const sourceLinkLabel = isStortinget ? 'Åpne hos Stortinget' : 'Kilde / Les saken';
 
@@ -240,6 +262,18 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
         </div>
 
         <div className="mb-6 flex-grow space-y-4">
+          {(showExpandableDescription || news.geminiReasoning) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {showExpandableDescription && (
+                <ExpandableInfoPanel title="Beskrivelse" content={description} />
+              )}
+
+              {news.geminiReasoning && (
+                <ExpandableInfoPanel title="AI-begrunnelse" content={news.geminiReasoning} />
+              )}
+            </div>
+          )}
+
           {displaySummary && (
             <section>
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
@@ -247,28 +281,6 @@ const NewsCard: React.FC<NewsCardProps> = ({ news }) => {
               </p>
               <p className="text-gray-200 text-base line-clamp-4 leading-relaxed">
                 {displaySummary}
-              </p>
-            </section>
-          )}
-
-          {showDescription && (
-            <section className="rounded-md bg-gray-900 border border-gray-700 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
-                Beskrivelse
-              </p>
-              <p className="text-gray-300 text-sm line-clamp-3 leading-relaxed">
-                {description}
-              </p>
-            </section>
-          )}
-
-          {news.geminiReasoning && (
-            <section className="rounded-md bg-gray-900 border border-gray-700 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
-                AI-begrunnelse
-              </p>
-              <p className="text-gray-300 text-sm line-clamp-3 leading-relaxed">
-                {news.geminiReasoning}
               </p>
             </section>
           )}
