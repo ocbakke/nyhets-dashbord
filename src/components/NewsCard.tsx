@@ -29,7 +29,11 @@ const ExpandableInfoPanel: React.FC<ExpandableInfoPanelProps> = ({ title, conten
 );
 
 const getSourceLogoUrl = (source: string) => {
+  const normalizedSource = source.toLocaleLowerCase('nb-NO');
+
   if (isStortingetSource(source)) return 'https://upload.wikimedia.org/wikipedia/commons/6/6d/Stortinget_logo.svg';
+  if (normalizedSource.includes('elvia') || normalizedSource.includes('strømbrudd') || normalizedSource.includes('strombrudd')) return 'https://www.google.com/s2/favicons?domain=elvia.no&sz=128';
+  if (normalizedSource.includes('statsforvalteren') || normalizedSource.includes('kunngjøring') || normalizedSource.includes('kunngjoring')) return 'https://www.google.com/s2/favicons?domain=statsforvalteren.no&sz=128';
   if (source.includes('Politiloggen') || source.includes('Politiet')) return 'https://www.google.com/s2/favicons?domain=politiet.no&sz=128';
   if (source.includes('Vegtrafikksentralen')) return 'https://www.google.com/s2/favicons?domain=vegvesen.no&sz=128';
   if (source.includes('Sarpsborg Kommune')) return 'https://upload.wikimedia.org/wikipedia/commons/4/43/Sarpsborg_komm.svg';
