@@ -11,7 +11,6 @@ Et React-basert dashbord for å følge lokale nyhetssaker og hendelser i sanntid
 - Viser AI-score, begrunnelse og sammendrag
 - Marker røde og ferske saker med alarm-animasjon
 - Kan sende nettleservarsler for saker med høy score
-- Kan åpne en ferdigutfylt opprett-lenke til Cue
 
 ## Teknologistack
 
@@ -32,7 +31,7 @@ Prosjektet er en ren frontend-app. Den gjør ikke selve skrapingen eller AI-vurd
 - `src/components/newsService.ts`: henter nyheter fra Supabase og mapper databasefelter til frontend-modellen
 - `src/services/supabaseClient.ts`: oppretter Supabase-klienten fra miljøvariabler
 - `src/components/FilterControls.tsx`: filterknapper og kildevalg
-- `src/components/NewsCard.tsx`: presentasjon av hver sak, inkludert Cue-lenke og varsellogikk
+- `src/components/NewsCard.tsx`: presentasjon av hver sak, inkludert kildelenke og varsellogikk
 - `src/types.ts`: TypeScript-typer for nyhetsdata
 - `src/constants.ts`: konstanter som oppdateringsintervall og prioritetsterskler
 
@@ -61,12 +60,9 @@ Lag en `.env`-fil med disse verdiene:
 ```env
 VITE_SUPABASE_URL=...
 VITE_SUPABASE_ANON_KEY=...
-VITE_CUE_HOST=...
-VITE_CUE_PUB_CODE=...
-VITE_CUE_PUB_NAME=...
 ```
 
-Bare `VITE_SUPABASE_URL` og `VITE_SUPABASE_ANON_KEY` er påkrevd for at appen skal starte. Cue-variablene er valgfrie og brukes når man oppretter sak via knappen i et nyhetskort.
+Begge variablene er påkrevd for at appen skal starte.
 
 ## Lokal utvikling
 
